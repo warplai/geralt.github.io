@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Карточка предприятия</title>
+  <style>
+    :root {
+      --bg-color: #f8f8f8;
+      --text-color: #333333;
+      --accent-color: #e0e0e0;
+      --button-bg: rgba(255, 255, 255, 0.8);
+      --panel-bg: rgba(255, 255, 255, 0.7);
+    }
+
+    body.dark-theme {
+      --bg-color: #121212;
+      --text-color: #f0f0f0;
+      --accent-color: #333333;
+      --button-bg: rgba(0, 0, 0, 0.7);
+      --panel-bg: rgba(0, 0, 0, 0.5);
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: all 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+      overflow-x: hidden;
+    }
+
+    /* Исправленные стили для иконки темы */
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: var(--button-bg);
+      border: none;
+      cursor: pointer;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+      backdrop-filter: blur(5px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .theme-icon {
+      position: absolute;
+      font-size: 1.5rem;
+      transition: all 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+      color: var(--text-color); /* Добавлено для правильного цвета иконок */
+    }
+
+    .sun {
+      opacity: 1;
+      transform: translateY(0) rotate(0deg);
+    }
+
+    .dark-theme .sun {
+      opacity: 0;
+      transform: translateY(-100%) rotate(180deg);
+    }
+
+    .moon {
+      opacity: 0;
+      transform: translateY(100%) rotate(180deg);
+    }
+
+    .dark-theme .moon {
+      opacity: 1;
+      transform: translateY(0) rotate(0deg);
+    }
+
+    /* Фон из бегущих строк - теперь более читаемый */
+    .marquee-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      display: grid;
+      grid-template-rows: repeat(12, 1fr);
+      gap: 1px;
+      pointer-events: none;
+    }
+
+    .marquee-row {
+      display: flex;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .marquee-content {
+      display: inline-flex;
+      align-items: center;
+      animation: scroll-left var(--duration) linear infinite;
+      will-change: transform;
+    }
+
+    .marquee-row:nth-child(even) .marquee-content {
+      animation: scroll-right var(--duration) linear infinite;
+    }
+
+    @keyframes scroll-left {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+
+    @keyframes scroll-right {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(0); }
+    }
+
+    .brand-item-bg {
+      display: inline-block;
+      margin: 0 2vw;
+      font-size: clamp(0.8rem, 1.5vw, 1.2rem);
+      color: var(--text-color);
+      opacity: 0.3; /* Увеличена прозрачность для лучшей читаемости */
+      transition: opacity 0.3s ease;
+      font-weight: 300;
+      letter-spacing: 1px; /* Увеличен межбуквенный интервал */
+    }
+
+    .brand-item-bg:hover {
+      opacity: 0.6;
+    }
+
+    /* Основной контент */
+    .content {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      background-color: rgba(var(--bg-color), 0.7);
+      backdrop-filter: blur(5px); /* Уменьшено размытие */
+    }
+
+    .company-name {
+      font-size: clamp(1.5rem, 4vw, 3rem);
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .company-description {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      max-width: 800px;
+      text-align: center;
+      margin-bottom: 3rem;
+      opacity: 0.9;
+    }
+
+    /* Панель с 6 кнопками */
+    .buttons-panel {
+      background: var(--panel-bg);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .buttons-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      width: 100%;
+    }
+
+    .action-button {
+      padding: 1rem;
+      background: var(--button-bg);
+      border: none;
+      border-radius: 12px;
+      color: var(--text-color);
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      text-align: center;
+      backdrop-filter: blur(5px);
+    }
+
+    .action-button i {
+      font-size: 1.8rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .action-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Специальные стили для кнопок с официальными иконками */
+    .ozon { color: #005BFF; }
+    .wb { color: #FF4D00; }
+    .ym { color: #FC3F1D; }
+    .tg { color: #2AABEE; }
+    .mail { color: #168DE2; }
+    .site { color: #4CAF50; }
+
+    .dark-theme .ozon { color: #5E8DFF; }
+    .dark-theme .wb { color: #FF7D4D; }
+    .dark-theme .ym { color: #FD6D5A; }
+    .dark-theme .tg { color: #5AC8FF; }
+    .dark-theme .mail { color: #5CB0FF; }
+    .dark-theme .site { color: #66BB6A; }
+
+    /* Список производителей - улучшенная читаемость */
+    .brands-panel {
+      background: var(--panel-bg);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 900px;
+      max-height: 400px;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .brands-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    .brands-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .brand-item {
+      padding: 10px 15px;
+      background: rgba(var(--text-color), 0.05);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      text-align: center;
+      transition: all 0.2s ease;
+      letter-spacing: 0.5px; /* Увеличен межбуквенный интервал */
+      cursor: pointer;
+    }
+
+    .brand-item:hover {
+      background: rgba(var(--text-color), 0.1);
+      transform: translateY(-2px);
+    }
+
+    /* Модальное окно с продукцией */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: var(--panel-bg);
+      backdrop-filter: blur(15px);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      color: var(--text-color);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-color);
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+      .buttons-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .brand-item-bg {
+        margin: 0 4vw;
+        font-size: 0.9rem;
+      }
+      
+      .marquee-container {
+        grid-template-rows: repeat(16, 1fr);
+      }
+      
+      .brands-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      }
+    }
+
+    @media (max-width: 480px) {
+      .buttons-container {
+        grid-template-columns: 1fr;
+      }
+      
+      .brands-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- Добавлены официальные иконки маркетплейсов -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/simple-icons/9.0.0/simpleicons.min.css">
+</head>
+<body class="light-theme">
+  <!-- Анимированный фон из брендов -->
+  <div class="marquee-container" id="marqueeContainer"></div>
+
+  <!-- Основной контент -->
+  <div class="content">
+    <button class="theme-toggle">
+      <span class="theme-icon sun"><i class="fas fa-sun"></i></span>
+      <span class="theme-icon moon"><i class="fas fa-moon"></i></span>
+    </button>
+    
+    <h1 class="company-name">Название компании</h1>
+    <p class="company-description">Краткое описание деятельности компании и основные направления работы</p>
+    
+    <!-- Панель с 6 кнопками -->
+    <div class="buttons-panel">
+      <div class="buttons-container">
+        <a href="#" class="action-button ozon">
+          <i class="si si-ozon"></i>
+          Ozon
+        </a>
+        <a href="#" class="action-button wb">
+          <i class="si si-wildberries"></i>
+          Wildberries
+        </a>
+        <a href="#" class="action-button ym">
+          <i class="si si-yandexmarket"></i>
+          Яндекс.Маркет
+        </a>
+        <a href="#" class="action-button tg">
+          <i class="fab fa-telegram"></i>
+          Телеграм
+        </a>
+        <a href="#" class="action-button mail">
+          <i class="fas fa-envelope"></i>
+          Почта
+        </a>
+        <a href="#" class="action-button site">
+          <i class="fas fa-globe"></i>
+          Сайт
+        </a>
+      </div>
+    </div>
+    
+    <!-- Список производителей -->
+    <div class="brands-panel">
+      <div class="brands-title">Наши производители</div>
+      <div class="brands-grid" id="brandsGrid"></div>
+    </div>
+  </div>
+
+  <!-- Модальное окно с продукцией -->
+  <div class="modal" id="productsModal">
+    <div class="modal-content">
+      <span class="modal-close">&times;</span>
+      <h2 class="modal-title" id="modalBrandName">Продукция бренда</h2>
+      <div id="productsList">
+        <!-- Список продуктов будет загружен здесь -->
+        <p style="text-align: center;">Здесь будет список продукции выбранного бренда</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Данные брендов
+    const brands = [
+      "Агеевский", "Азовская КФ", "Акульчев ТД", "Алёша Попович", 
+      "Бековский", "Бессоновский", "Богданович", "БрянКонфи", 
+      "Вижер", "Визит", "ВКК Дон", "Волжский пекарь", 
+      "Вольный Ветер", "Чеховские грибочки", "Демичева А Л", "Дымка",
+      "Ефремовский ХК", "Жуковский хлеб", "Заляева (Лакомка)", "Кайнак",
+      "Каролина", "Кёльнер", "Кико Нектар", "Кубань хлеб",
+      "Любятово", "Мирослада", "Мишки (Сладкий городок)", "Неважно",
+      "Невская сушка", "Новомосковский ХК", "Оско КФ", "Очарование",
+      "Пекарня Анна Мария", "Пекарня Яковлева", "Покровская КФ", "Полет",
+      "Посольство Вкусной еды", "Русский кондитер", "Северная столица", "Северянин",
+      "Серпухов хлеб", "Сладкая позиция", "Сладкий Рай", "Сладости Востока",
+      "Таганрогская КФ", "Тасти (Тестори)", "Узловской ХК", "Услада",
+      "Шанс", "Ясная поляна", "Фабрика Морозова"
+    ];
+
+    // Инициализация бегущих строк (фон)
+    function initMarquee() {
+      const container = document.getElementById('marqueeContainer');
+      const rowCount = window.innerWidth < 768 ? 16 : 12;
+      
+      for (let i = 0; i < rowCount; i++) {
+        const row = document.createElement('div');
+        row.className = 'marquee-row';
+        
+        const content = document.createElement('div');
+        content.className = 'marquee-content';
+        
+        const duration = 60 + Math.random() * 120;
+        content.style.setProperty('--duration', `${duration}s`);
+        
+        const shuffledBrands = [...brands].sort(() => Math.random() - 0.5);
+        
+        for (let j = 0; j < 3; j++) {
+          shuffledBrands.forEach(brand => {
+            const brandElement = document.createElement('span');
+            brandElement.className = 'brand-item-bg';
+            brandElement.textContent = brand;
+            content.appendChild(brandElement);
+          });
+        }
+        
+        row.appendChild(content);
+        container.appendChild(row);
+      }
+    }
+
+    // Инициализация списка брендов (основной)
+    function initBrands() {
+      const grid = document.getElementById('brandsGrid');
+      brands.forEach(brand => {
+        const brandElement = document.createElement('div');
+        brandElement.className = 'brand-item';
+        brandElement.textContent = brand;
+        brandElement.addEventListener('click', () => openBrandModal(brand));
+        grid.appendChild(brandElement);
+      });
+    }
+
+    // Открытие модального окна с продукцией
+    function openBrandModal(brandName) {
+      const modal = document.getElementById('productsModal');
+      const modalTitle = document.getElementById('modalBrandName');
+      
+      modalTitle.textContent = `Продукция: ${brandName}`;
+      modal.style.display = 'flex';
+      
+      // Здесь можно добавить загрузку реальных данных о продукции
+      // Пока используем заглушку
+      const productsList = document.getElementById('productsList');
+      productsList.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <p>Информация о продукции бренда ${brandName}</p>
+          <p>Здесь будет список товаров и категорий</p>
+        </div>
+      `;
+    }
+
+    // Закрытие модального окна
+    function closeModal() {
+      document.getElementById('productsModal').style.display = 'none';
+    }
+
+    // Переключение темы
+    function toggleTheme() {
+      document.body.classList.toggle('dark-theme');
+      localStorage.setItem('darkTheme', document.body.classList.contains('dark-theme'));
+    }
+
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', () => {
+      initMarquee();
+      initBrands();
+      
+      // Восстанавливаем тему
+      if (localStorage.getItem('darkTheme') === 'true') {
+        document.body.classList.add('dark-theme');
+      }
+      
+      // Назначаем обработчики
+      document.querySelector('.theme-toggle').addEventListener('click', toggleTheme);
+      document.querySelector('.modal-close').addEventListener('click', closeModal);
+      
+      // Закрытие модального окна при клике вне его
+      document.getElementById('productsModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('productsModal')) {
+          closeModal();
+        }
+      });
+
+      // Загрузка данных компании
+      fetch('/api/data')
+        .then(response => response.json())
+        .then(data => {
+          if (data.name) document.querySelector('.company-name').textContent = data.name;
+          if (data.description) document.querySelector('.company-description').textContent = data.description;
+          if (data.links) {
+            const buttons = document.querySelectorAll('.action-button');
+            data.links.forEach((link, index) => {
+              if (buttons[index]) {
+                buttons[index].href = link.url;
+              }
+            });
+          }
+        });
+    });
+
+    window.addEventListener('resize', () => {
+      const container = document.getElementById('marqueeContainer');
+      container.innerHTML = '';
+      initMarquee();
+    });
+  </script>
+</body>
+</html>
